@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Psokrmič</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100px;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      margin-top: 50px;
+    }
+    .btn-custom {
+      background-color: #6c757d; /* Bootstrap secondary color (gray) */
+      color: white;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+    }
+    .btn-custom:disabled {
+      background-color: #b5b5b5; /* Disabled button color */
+      cursor: not-allowed;
+    }
+    .btn-custom:hover:not(:disabled) {
+      background-color: #5a6268; /* Slightly darker shade of gray */
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+    #image-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+    #image-container img {
+      max-width: 100%;
+      max-height: 500px;
+      width: auto;
+      height: auto;
+      border-radius: 15px;
+    }
+    h1 {
+      font-size: 3rem; /* Larger font size */
+      font-weight: bold;
+    }
+    h2 {
+      margin-top: 30px;
+    }
+    table {
+      margin-top: 20px;
+      width: 100%;
+    }
+    td, th {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">Psokrmič</h1>
+    <button id="motorButton" class="btn btn-custom">Nakŕmiť psa</button>
+    <div id="status" class="mt-3"></div>
+
+    <h2 class="mt-5">Posledné kŕmenie</h2>
+    <table id="feeding-log-table" class="table table-striped">
+      <tbody>
+        <!-- Posledné kŕmenie bude pridané sem -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="image-container">
+    <img src="psik.png" alt="Ilustračný obrázok" />
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById("motorButton").addEventListener("click", function () {
+      const motorButton = document.getElementById("motorButton");
+      const statusDiv = document.getElementById("status");
+
+      // Deaktivovať tlačidlo
+      motorButton.disabled = true;
+      statusDiv.textContent = "Motor sa otáča...";
+
+      // Simulácia požiadavky na server
+      fetch("http://192.168.0.139/api/motor?o=200")
+        .then((response) => {
+          if (response.ok) {
+            return response.text();
+          } else {
+            throw new Error("Požiadavka zlyhala.");
+          }
+        })
+        .then((data) => {
+          statusDiv.textContent = `Odpoveď zo servera: ${data}`;
+          logFeedingTime(); // Zavoláme funkciu na zobrazenie času kŕmenia
+        })
+        .catch((error) => {
+          statusDiv.textContent = `Chyba: ${error.message}`;
+        })
+        .finally(() => {
+          // Po 10 sekundách znovu aktivovať tlačidlo
+          setTimeout(() => {
+            motorButton.disabled = false;
+            statusDiv.textContent = "Môžete znovu nakŕmiť psa.";
+          }, 10000);
+        });
+    });
+
+    function logFeedingTime() {
+      // Získame aktuálny čas
+      const now = new Date();
+      const timeString = formatDate(now); // Formátovaný čas
+
+      // Pridáme čas do tabuľky (len posledné kŕmenie)
+      const table = document.getElementById("feeding-log-table").getElementsByTagName("tbody")[0];
+      table.innerHTML = ''; // Vymažeme predchádzajúci obsah tabuľky
+      const row = table.insertRow();
+      const cell = row.insertCell(0);
+      cell.textContent = timeString;
+
+      // Uložíme posledný čas do localStorage
+      localStorage.setItem('lastFeedingTime', timeString);
+    }
+
+    // Funkcia na formátovanie dátumu
+    function formatDate(date) {
+      const days = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
+      const day = days[date.getDay()];
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      const dayOfMonth = date.getDate();
+      const month = date.getMonth() + 1; // Január = 0, teda +1
+      const year = date.getFullYear();
+
+      return `${day} ${hours}:${minutes}:${seconds}  ${dayOfMonth}.${month}.${year}`;
+    }
+
+    // Načítanie posledného záznamu zo localStorage pri načítaní stránky
+    window.onload = function () {
+      const lastFeedingTime = localStorage.getItem('lastFeedingTime');
+      if (lastFeedingTime) {
+        const table = document.getElementById("feeding-log-table").getElementsByTagName("tbody")[0];
+        const row = table.insertRow();
+        const cell = row.insertCell(0);
+        cell.textContent = lastFeedingTime;
+      }
+    };
+  </script>
+</body>
+</html>
